@@ -116,6 +116,48 @@ export interface LoadRow {
   commodity_type?: CommodityTypeRef | null
 }
 
+export interface BillingSubscription {
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: string | null
+  is_billable: number
+  bill_rate: string | null
+  currency: string | null
+  days_until_due: number | null
+  default_payment_method_id: string | null
+  coupon_code: string | null
+  coupon_redeemed: boolean
+}
+
+export interface PaymentMethodRow {
+  id: string
+  brand: string | null
+  last4: string | null
+  exp_month: number | null
+  exp_year: number | null
+  is_default: boolean
+}
+
+export interface BillRow {
+  id: number
+  billing_period_start: string | null
+  billing_period_end: string | null
+  total_active_trucks: number
+  total_amount: string | number | null
+  status: string | null
+  stripe_invoice_id: string | null
+  stripe_payment_intent_id: string | null
+  hosted_invoice_url: string | null
+  invoice_pdf: string | null
+  created_at: string | null
+}
+
+export interface OrgBilling {
+  subscription: BillingSubscription
+  payment_methods: PaymentMethodRow[]
+  bills: BillRow[]
+}
+
 export interface OrgDetailResponse {
   status: boolean
   message: string
@@ -136,4 +178,5 @@ export interface OrgDetailResponse {
   companies: CompanyRow[]
   contracts: ContractRow[]
   recent_loads: LoadRow[]
+  billing: OrgBilling
 }

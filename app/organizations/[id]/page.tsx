@@ -386,9 +386,202 @@ function OrganizationDetail() {
                 </div>
               )}
             </section>
+
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-base font-semibold text-slate-900">Stripe Payments</h2>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-slate-700">Subscription</h3>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${subscriptionBadgeClass(data.billing.subscription.subscription_status)}`}
+                    >
+                      {data.billing.subscription.subscription_status ?? 'none'}
+                    </span>
+                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <BillingRow
+                      label="Stripe Customer"
+                      value={data.billing.subscription.stripe_customer_id}
+                    />
+                    <BillingRow
+                      label="Subscription ID"
+                      value={data.billing.subscription.stripe_subscription_id}
+                    />
+                    <BillingRow
+                      label="Bill Rate"
+                      value={
+                        data.billing.subscription.bill_rate
+                          ? `$${fmtNumber(toNumber(data.billing.subscription.bill_rate), 2)} / truck`
+                          : null
+                      }
+                    />
+                    <BillingRow
+                      label="Currency"
+                      value={data.billing.subscription.currency?.toUpperCase()}
+                    />
+                    <BillingRow
+                      label="Days Until Due"
+                      value={
+                        data.billing.subscription.days_until_due != null
+                          ? fmtNumber(data.billing.subscription.days_until_due)
+                          : null
+                      }
+                    />
+                    <BillingRow
+                      label="Billable"
+                      value={data.billing.subscription.is_billable === 1 ? 'Yes' : 'No'}
+                    />
+                    {data.billing.subscription.coupon_code ? (
+                      <BillingRow
+                        label="Coupon"
+                        value={`${data.billing.subscription.coupon_code}${data.billing.subscription.coupon_redeemed ? ' (redeemed)' : ''}`}
+                      />
+                    ) : null}
+                  </dl>
+                </div>
+
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-slate-700">Saved Cards</h3>
+                  {data.billing.payment_methods.length === 0 ? (
+                    <p className="text-sm text-slate-500">No payment methods on file.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {data.billing.payment_methods.map((method) => (
+                        <li
+                          key={method.id}
+                          className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        >
+                          <span className="font-medium text-slate-800">
+                            {(method.brand ?? 'card').toUpperCase()} ···· {method.last4 ?? '????'}
+                          </span>
+                          <span className="flex items-center gap-2 text-xs text-slate-500">
+                            {method.exp_month != null && method.exp_year != null
+                              ? `exp ${String(method.exp_month).padStart(2, '0')}/${method.exp_year}`
+                              : null}
+                            {method.is_default ? (
+                              <span className="rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-700">
+                                Default
+                              </span>
+                            ) : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="mb-3 mt-6 text-sm font-medium text-slate-700">
+                Invoices ({data.billing.bills.length})
+              </h3>
+              {data.billing.bills.length === 0 ? (
+                <p className="text-sm text-slate-500">No invoices for this organization.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-2 font-medium">Billing Period</th>
+                        <th className="px-3 py-2 text-right font-medium">Trucks</th>
+                        <th className="px-3 py-2 text-right font-medium">Amount</th>
+                        <th className="px-3 py-2 font-medium">Status</th>
+                        <th className="px-3 py-2 font-medium">Invoice</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.billing.bills.map((bill) => (
+                        <tr key={bill.id} className="border-b border-slate-100 last:border-0">
+                          <td className="px-3 py-2.5 whitespace-nowrap text-slate-600">
+                            {fmtDate(bill.billing_period_start)} – {fmtDate(bill.billing_period_end)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-slate-800">
+                            {fmtNumber(bill.total_active_trucks)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-slate-800">
+                            {bill.total_amount != null
+                              ? `$${fmtNumber(toNumber(bill.total_amount), 2)}`
+                              : '—'}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${billBadgeClass(bill.status)}`}
+                            >
+                              {bill.status ?? 'unknown'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-600">
+                            <div className="flex gap-3">
+                              {bill.hosted_invoice_url ? (
+                                <a
+                                  href={bill.hosted_invoice_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  View
+                                </a>
+                              ) : null}
+                              {bill.invoice_pdf ? (
+                                <a
+                                  href={bill.invoice_pdf}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  PDF
+                                </a>
+                              ) : null}
+                              {!bill.hosted_invoice_url && !bill.invoice_pdf ? '—' : null}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </div>
         ) : null}
       </main>
     </div>
   )
+}
+
+function BillingRow({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="break-all text-right font-medium text-slate-800">{value || '—'}</dd>
+    </div>
+  )
+}
+
+function subscriptionBadgeClass(status: string | null | undefined): string {
+  switch (status) {
+    case 'active':
+    case 'trialing':
+      return 'bg-green-100 text-green-700'
+    case 'past_due':
+    case 'incomplete':
+      return 'bg-amber-100 text-amber-700'
+    case 'unpaid':
+      return 'bg-red-100 text-red-700'
+    default:
+      return 'bg-slate-200 text-slate-600'
+  }
+}
+
+function billBadgeClass(status: string | null | undefined): string {
+  switch (status) {
+    case 'paid':
+      return 'bg-green-100 text-green-700'
+    case 'failed':
+      return 'bg-red-100 text-red-700'
+    case 'pending':
+      return 'bg-amber-100 text-amber-700'
+    default:
+      return 'bg-slate-200 text-slate-600'
+  }
 }
