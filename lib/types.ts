@@ -38,6 +38,58 @@ export interface OrgListResponse {
   organizations: OrgListItem[]
 }
 
+export interface ImpersonateResponse {
+  status: boolean
+  message: string
+  token?: string
+}
+
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
+
+export interface SupportTicket {
+  id: number
+  name: string
+  email: string
+  subject: string
+  message: string
+  source: string
+  status: TicketStatus
+  admin_notes: string | null
+  user_id: number | null
+  organization_id: number | null
+  created_at: string | null
+  updated_at: string | null
+  organization?: { id: number; org_name: string } | null
+  user?: {
+    id: number
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+    username: string | null
+  } | null
+}
+
+export interface TicketCounts {
+  all: number
+  open: number
+  in_progress: number
+  resolved: number
+  closed: number
+}
+
+export interface TicketListResponse {
+  status: boolean
+  message: string
+  tickets: SupportTicket[]
+  counts: TicketCounts
+}
+
+export interface TicketDetailResponse {
+  status: boolean
+  message: string
+  ticket: SupportTicket
+}
+
 export interface DetailSummary extends OrgSummary {
   companies_count: number
   drivers_count: number

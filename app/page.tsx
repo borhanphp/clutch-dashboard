@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
-import type { OrgListItem, OrgListResponse } from '@/lib/types'
+import type { ImpersonateResponse, OrgListItem, OrgListResponse } from '@/lib/types'
 import { fmtCurrency, fmtNumber, fmtTonnage } from '@/lib/format'
 import RequireAuth from '@/components/RequireAuth'
 import AppHeader from '@/components/AppHeader'
@@ -23,6 +23,32 @@ function OrganizationsList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [impersonating, setImpersonating] = useState<number | null>(null)
+  const [impersonateError, setImpersonateError] = useState('')
+
+  const loginAs = async (org: OrgListItem) => {
+    setImpersonating(org.id)
+    setImpersonateError('')
+    try {
+      const response = await api.post<ImpersonateResponse>(
+        `/admin/organizations/${org.id}/impersonate`,
+      )
+      if (response.data.status && response.data.token) {
+        const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'http://localhost:3000'
+        window.open(
+          `${base}/sso?token=${encodeURIComponent(response.data.token)}`,
+          '_blank',
+          'noopener',
+        )
+      } else {
+        setImpersonateError(response.data.message || 'Could not log in to that organization.')
+      }
+    } catch {
+      setImpersonateError('Could not log in to that organization.')
+    } finally {
+      setImpersonating(null)
+    }
+  }
 
   useEffect(() => {
     api
@@ -96,12 +122,26 @@ function OrganizationsList() {
             No organizations found.
           </p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <>
+            {impersonateError ? (
+              <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {impersonateError}
+              </p>
+            ) : null}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((org) => (
-              <button
+              <div
                 key={org.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => router.push(`/organizations/${org.id}`)}
-                className="group rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    router.push(`/organizations/${org.id}`)
+                  }
+                }}
+                className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -167,9 +207,24 @@ function OrganizationsList() {
                     <p className="text-xs text-slate-500">Contracts</p>
                   </div>
                 </div>
-              </button>
+
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    disabled={impersonating === org.id}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      loginAs(org)
+                    }}
+                    className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {impersonating === org.id ? 'Logging in…' : 'Login to Dashboard'}
+                  </button>
+                </div>
+              </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>

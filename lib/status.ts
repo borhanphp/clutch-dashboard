@@ -13,3 +13,15 @@ export function statusMeta(status: string | null | undefined) {
   if (!status) return { label: 'Unknown', color: '#94a3b8' }
   return LOAD_STATUS[status] ?? { label: 'Unknown', color: '#94a3b8' }
 }
+
+export const TICKET_STATUS: Record<string, { label: string; color: string }> = {
+  open: { label: 'Open', color: '#0ea5e9' },
+  in_progress: { label: 'In Progress', color: '#f59e0b' },
+  resolved: { label: 'Resolved', color: '#22c55e' },
+  closed: { label: 'Closed', color: '#64748b' },
+}
+
+export function ticketStatusMeta(status: string | null | undefined) {
+  if (!status) return { label: 'Unknown', color: '#94a3b8' }
+  return TICKET_STATUS[status] ?? { label: status, color: '#94a3b8' }
+}
